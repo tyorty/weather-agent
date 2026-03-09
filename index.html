@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Weather Agent</title>
+<style>
+body{background:#111;color:#eee;font-family:sans-serif;padding:20px;text-align:center;max-width:480px;margin:0 auto}
+h2{color:#5bc4f0;font-size:22px;margin-bottom:20px}
+input{font-size:24px;padding:12px;width:170px;text-align:center;background:#222;color:#eee;border:2px solid #0af;border-radius:8px;letter-spacing:6px}
+button{display:block;width:100%;margin-top:14px;font-size:20px;padding:18px;background:#0af;color:#000;border:none;border-radius:10px;font-weight:bold;cursor:pointer}
+button:disabled{background:#444;color:#888;cursor:not-allowed}
+#out{margin-top:24px;text-align:left}
+.city{color:#5bc4f0;font-size:20px;text-align:center;margin-bottom:6px}
+.curtemp{font-size:52px;font-weight:bold;text-align:center;margin:8px 0}
+.wind{color:#4a8aaa;text-align:center;margin-bottom:16px}
+.summary{background:#1a3a5c;border-radius:10px;padding:16px;margin-bottom:16px;line-height:1.8;font-size:15px}
+.lbl{font-size:10px;color:#4a8aaa;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+.hours{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px}
+.hcard{background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:10px 8px;text-align:center;min-width:68px;flex-shrink:0}
+.hcard .ht{font-size:10px;color:#4a8aaa;margin-bottom:4px}
+.hcard .hi{font-size:20px;margin-bottom:4px}
+.hcard .htemp{font-weight:bold;font-size:14px}
+.hcard .hw{font-size:10px;color:#4a8aaa;margin-top:3px}
+.err{color:#f88;padding:16px;background:#300;border-radius:8px}
+</style>
+</head>
+<body>
+<h2>🌦 AI Weather Agent</h2>
+<div class="lbl">ZIP Code</div>
+<input id="zip" type="tel" value="48813" maxlength="5">
+<button id="btn" onclick="go()">🌤 GET FORECAST</button>
+<div id="out"></div>
+<script>
+var I={0:"☀️",1:"🌤",2:"⛅",3:"☁️",45:"🌫",48:"🌫",51:"🌦",53:"🌦",55:"🌧",61:"🌧",63:"🌧",65:"🌧",71:"🌨",73:"❄️",75:"❄️",80:"🌦",81:"🌧",95:"⛈"};
+function ic(c){return I[c]||I[Math.floor(c/10)*10]||"🌡";}
+function ft(s){return new Date(s).toLocaleTimeString('en-US',{hour:'numeric',hour12:true});}
+function go(){
+  var z=document.getElementById('zip').value.trim();
+  if(!z||z.length!==5){document.getElementById('out').innerHTML='<div class="err">Enter a 5-digit ZIP.</div>';return;}
+  var btn=document.getElementById('btn');
+  btn.disabled=true;btn.textContent='⏳ Loading...';
+  document.getElementById('out').innerHTML='';
+  fetch('/forecast?zip='+z)
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.error){document.getElementById('out').innerHTML='<div class="err">'+d.error+'</div>';return;}
+    var h='<div class="city">'+d.city+'</div>';
+    h+='<div class="curtemp">'+ic(d.current.weathercode)+' '+Math.round(d.current.temperature)+'°F</div>';
+    h+='<div class="wind">Wind: '+Math.round(d.current.windspeed)+' mph</div>';
+    h+='<div class="summary"><div class="lbl">🤖 Claude says</div>'+d.summary+'</div>';
+    h+='<div class="lbl">Next 8 Hours</div><div class="hours">';
+    d.hours.forEach(function(hr,i){
+      h+='<div class="hcard"><div class="ht">'+(i===0?'Now':ft(hr.time))+'</div>';
+      h+='<div class="hi">'+ic(hr.code)+'</div>';
+      h+='<div class="htemp">'+Math.round(hr.temp)+'°F</div>';
+      h+='<div class="hw">💨'+Math.round(hr.wind)+'</div></div>';
+    });
+    h+='</div>';
+    document.getElementById('out').innerHTML=h;
+  })
+  .catch(function(e){document.getElementById('out').innerHTML='<div class="err">Error: '+e.message+'</div>';})
+  .finally(function(){btn.disabled=false;btn.textContent='🌤 GET FORECAST';});
+}
+</script>
+</body>
+</html>
